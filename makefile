@@ -12,6 +12,7 @@ OBJFILES = \
 	loader.o  \
 	common/printf.o  \
 	common/screen.o  \
+	pci.o  \
 	kernel.o
 
 image:
