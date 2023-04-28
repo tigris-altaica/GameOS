@@ -4,6 +4,9 @@ LD      = ld
 DEV1	= /dev/loop18
 DEV2	= /dev/loop19
 GRUB_PATH = ./grub_distr
+IMAGE	= ./hdd.img
+IMAGE_SIZE	= 16065
+TEMP_DIR = tempdir
 
 OBJFILES = \
 	loader.o  \
@@ -13,20 +16,20 @@ OBJFILES = \
 
 image:
 	@echo "Creating hdd.img..."
-	dd if=/dev/zero of=./hdd.img bs=512 count=16065 1>/dev/null 2>&1
+	dd if=/dev/zero of=$(IMAGE) bs=512 count=$(IMAGE_SIZE) 1>/dev/null 2>&1
 
 	@echo "Creating bootable first FAT32 partition..."
-	losetup $(DEV1) ./hdd.img
+	sudo losetup $(DEV1) $(IMAGE)
 	(echo c; echo u; echo n; echo p; echo 1; echo ;  echo ; echo a; echo 1; echo t; echo c; echo w;) | fdisk $(DEV1) 1>/dev/null 2>&1 || true
 
 	@echo "Mounting partition to $(DEV2)..."
-	losetup $(DEV2) ./hdd.img \
-    --offset    `echo \`fdisk -lu $(DEV1) | sed -n 9p | awk '{print $$3}'\`*512 | bc` \
-    --sizelimit `echo \`fdisk -lu $(DEV1) | sed -n 9p | awk '{print $$4}'\`*512 | bc`
-	losetup -d $(DEV1)
+	sudo losetup $(DEV2) $(IMAGE) \
+    --offset    `echo \`sudo fdisk -lu $(DEV1) | sed -n 9p | awk '{print $$3}'\`*512 | bc` \
+    --sizelimit `echo \`sudo fdisk -lu $(DEV1) | sed -n 9p | awk '{print $$4}'\`*512 | bc`
+	sudo losetup -d $(DEV1)
 
 	@echo "Format partition..."
-	mkdosfs $(DEV2)
+	sudo mkdosfs $(DEV2)
 
 	@echo "Copy kernel and grub files on partition..."
 	mkdir -p tempdir
@@ -37,7 +40,7 @@ image:
 	sleep 1
 	umount $(DEV2)
 	rm -r tempdir
-	losetup -d $(DEV2)
+	sudo losetup -d $(DEV2)
 
 	@echo "Installing GRUB..."
 	echo "device (hd0) hdd.img \n \
@@ -46,15 +49,26 @@ image:
 	       quit\n" | $(GRUB_PATH)/grub/usr/sbin/grub --batch 1>/dev/null
 	@echo "Done!"
 
-run: clean all image
-	qemu-system-i386 -hda hdd.img
-all: kernel.bin image
+run:
+	qemu-system-i386 -hda $(IMAGE)
+
+rerun: clean all image run
+
+all: kernel.bin
+
 rebuild: clean all image
+
 .s.o:
 	as -o $@ $< --32
+
 .c.o:
 	$(CC) -Iinclude $(CFLAGS) -o $@ -c $< -m32
+
 kernel.bin: $(OBJFILES)
 	$(LD) -T linker.ld -o $@ $^ -m elf_i386
+
 clean:
-	rm -f $(OBJFILES) hdd.img kernel.bin
+	-sudo umount $(TEMP_DIR)
+	-sudo losetup -d $(DEV1)
+	-sudo losetup -d $(DEV2)
+	rm -f $(OBJFILES) $(IMAGE) kernel.bin
