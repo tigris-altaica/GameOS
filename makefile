@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -fno-builtin -nostdinc -nostdlib
+CFLAGS  = -Wall -fno-builtin -nostdinc -nostdlib -ggdb3
 LD      = ld
 DEV1	= /dev/loop18
 DEV2	= /dev/loop19
@@ -32,14 +32,14 @@ image:
 	sudo mkdosfs $(DEV2)
 
 	@echo "Copy kernel and grub files on partition..."
-	mkdir -p tempdir
-	mount $(DEV2) tempdir
-	mkdir tempdir/boot
-	cp -r grub tempdir/boot/
-	cp kernel.bin tempdir/
+	mkdir -p $(TEMP_DIR)
+	mount $(DEV2) $(TEMP_DIR)
+	mkdir $(TEMP_DIR)/boot
+	cp -r grub $(TEMP_DIR)/boot/
+	cp kernel.bin $(TEMP_DIR)/
 	sleep 1
 	umount $(DEV2)
-	rm -r tempdir
+	rm -r $(TEMP_DIR)
 	sudo losetup -d $(DEV2)
 
 	@echo "Installing GRUB..."
@@ -54,9 +54,13 @@ run:
 
 rerun: clean all image run
 
+runcgdb: clean all image
+	sudo qemu-system-i386 -s -S -hda hdd.img &
+	sudo cgdb kernel.bin.dbg
+
 all: kernel.bin
 
-rebuild: clean all image
+rebuild: clean all
 
 .s.o:
 	as -o $@ $< --32
@@ -65,7 +69,9 @@ rebuild: clean all image
 	$(CC) -Iinclude $(CFLAGS) -o $@ -c $< -m32
 
 kernel.bin: $(OBJFILES)
-	$(LD) -T linker.ld -o $@ $^ -m elf_i386
+	$(LD) -T linker.ld -o $@.dbg $^ -m elf_i386
+	cp $@.dbg $@
+	strip $@
 
 clean:
 	-sudo umount $(TEMP_DIR)
