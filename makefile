@@ -13,7 +13,8 @@ OBJFILES = \
 	common/printf.o  \
 	common/screen.o  \
 	pci.o  \
-	kernel.o
+	kernel.o \
+	tetris.o
 
 image:
 	@echo "Creating hdd.img..."
