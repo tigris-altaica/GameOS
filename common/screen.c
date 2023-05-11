@@ -5,8 +5,8 @@ static unsigned char curr_col = 0;
 static unsigned char curr_row = 0;
 
 // Write character at current screen location
-#define PUT(c) ( ((unsigned short *) (DEF_VRAM_BASE)) \
-	[(curr_row * MAX_COL) + curr_col] = (GREEN << 8) | (c))
+#define PUT(c) ( ((unsigned short *) (VIDEO_BUFFER)) \
+	[(curr_row * MAX_COL) + curr_col] = (0x2 << 8) | (c))
 
 // Place a character on next screen position
 static void cons_putc(int c)

@@ -124,43 +124,37 @@ void cursor_moveto(unsigned int strnum, unsigned int pos)
     unsigned short new_pos = (strnum * VIDEO_WIDTH) + pos;     
     out8(CURSOR_PORT, 0x0F);     
     out8(CURSOR_PORT + 1, (unsigned char)(new_pos & 0xFF));  
-        out8(CURSOR_PORT, 0x0E);     
+    out8(CURSOR_PORT, 0x0E);     
     out8(CURSOR_PORT + 1, (unsigned char)( (new_pos >> 8) & 0xFF)); 
 } 
 
-/*void out_str(const char* ptr) 
+void out_chr(const unsigned char chr, unsigned int row, unsigned int col, int color) 
 {  
-    unsigned char* video_buf = (unsigned char*) DEF_VRAM_BASE;  
-    video_buf += MAX_COL * 2 * row + col; 
- 
-    while (*ptr)  
-    {
-        video_buf[0] = (unsigned char) *ptr;
-        video_buf[1] = color; 
-        video_buf += 2;   
-        ptr++;  
-    }
-    col = 0;
-    //cursor_moveto(++row, pos);
-} */
-
-void out_chr(const char chr, unsigned int row, unsigned int col, int color) 
-{  
-    unsigned char* video_buf = (unsigned char*) DEF_VRAM_BASE;  
+    unsigned char* video_buf = (unsigned char*) VIDEO_BUFFER;  
     video_buf += MAX_COL * 2 * row + 2 * col; 
  
     video_buf[0] = chr;
     video_buf[1] = color;
 } 
 
-char * strncpy (char *dst_, const char *src_, size_t n) 
+unsigned char * memcpy (unsigned char *dst_, const unsigned char *src_, size_t n) 
 {
-  char *dst = dst_;
-  const char *src = src_;
-  while (*src && n--)
+  unsigned char *dst = dst_;
+  const unsigned char *src = src_;
+  while (n--)
     *dst++ = *src++;
-  //*dst = '\0';
   return dst_;
+}
+
+unsigned int rand()
+{
+    static unsigned int x0 = 1;
+    unsigned int a = 84589, c = 45989, m = 217728;
+
+    unsigned int x = (a * x0 + c) % m;
+    x0 = x;
+
+    return x; 
 }
 
 void on_key(int scan_code)
