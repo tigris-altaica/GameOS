@@ -18,10 +18,6 @@ void keyb_handler();
 void keyb_process_keys();
 void on_key(int scan_code);
 
-unsigned int row = 0;
-unsigned int col = 0;
-int color = 0xe; 
-
 struct idt_entry
 {     
     unsigned short base_lo;    // Младшие биты адреса обработчика     
@@ -132,7 +128,7 @@ void cursor_moveto(unsigned int strnum, unsigned int pos)
     out8(CURSOR_PORT + 1, (unsigned char)( (new_pos >> 8) & 0xFF)); 
 } 
 
-void out_str(const char* ptr) 
+/*void out_str(const char* ptr) 
 {  
     unsigned char* video_buf = (unsigned char*) DEF_VRAM_BASE;  
     video_buf += MAX_COL * 2 * row + col; 
@@ -146,6 +142,15 @@ void out_str(const char* ptr)
     }
     col = 0;
     //cursor_moveto(++row, pos);
+} */
+
+void out_chr(const char chr, unsigned int row, unsigned int col, int color) 
+{  
+    unsigned char* video_buf = (unsigned char*) DEF_VRAM_BASE;  
+    video_buf += MAX_COL * 2 * row + 2 * col; 
+ 
+    video_buf[0] = chr;
+    video_buf[1] = color;
 } 
 
 char * strncpy (char *dst_, const char *src_, size_t n) 
@@ -168,7 +173,7 @@ void on_key(int scan_code)
         MoveRight();
         break;
     case 80:
-        //MoveDownToBottom();
+        MoveDownToBottom();
         break;
     case 57:
         //RotateFigure();

@@ -12,7 +12,7 @@ OBJFILES = \
 	loader.o  \
 	common/printf.o  \
 	common/screen.o  \
-	pci.o  \
+	common/sleep.o  \
 	kernel.o \
 	tetris.o
 

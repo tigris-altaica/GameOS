@@ -5,10 +5,11 @@
 
 struct Coordinates figCoord[4];
 
-char screen[VRAM_SIZE];
+int color;
 
 void InitScreen()
 {
+	char screen[VRAM_SIZE];
 	for (int curr_row = 0; curr_row < MAX_ROW; curr_row++)
 	{
 		screen[LIN_ADDR(curr_row, 0)] = '|';
@@ -19,10 +20,14 @@ void InitScreen()
 		screen[LIN_ADDR(curr_row, MAX_COL - 2)] = '|';
 		screen[LIN_ADDR(curr_row, MAX_COL - 1)] = '\n';
 	}
+
+	printf(screen);
 }
 
 void CreateNewFigure()
 {
+	color = 0xe;
+
 	for (size_t i = 0; i < 4; i++)
 	{
 		figCoord[i].y = 0;
@@ -41,7 +46,7 @@ void CreateNewFigure()
 		figCoord[i].x = MAX_COL / 2 - 1 + i - 2 * (i > 2);
 	}
 
-	for (size_t i = 0; i < 4; i++)
+	/*for (size_t i = 0; i < 4; i++)
 	{
 		figCoord[i].y = i - (i > 2);
 		figCoord[i].x = MAX_COL / 2 + (i > 2);
@@ -52,6 +57,11 @@ void CreateNewFigure()
 		figCoord[i].y = i - (i > 1);
 		figCoord[i].x = MAX_COL / 2 + (i > 1);
 	}*/
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+	}
 
 }
 
@@ -66,10 +76,21 @@ int MoveDown()
 
 	for (size_t i = 0; i < 4; i++)
 	{
+		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	}
+
+	for (size_t i = 0; i < 4; i++)
+	{
 		figCoord[i].y++;
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
 	}
 
 	return 0;
+}
+
+void MoveDownToBottom()
+{
+	while (MoveDown() != -1);
 }
 
 void MoveLeft()
@@ -83,7 +104,13 @@ void MoveLeft()
 
 	for (size_t i = 0; i < 4; i++)
 	{
+		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	}
+
+	for (size_t i = 0; i < 4; i++)
+	{
 		figCoord[i].x--;
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
 	}
 }
 
@@ -91,54 +118,58 @@ void MoveRight()
 {
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (figCoord[i].x >= MAX_COL - 2){
+		if (figCoord[i].x >= MAX_COL - 3){
 			return;
 		}
 	}
 
 	for (size_t i = 0; i < 4; i++)
 	{
+		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	}
+
+	for (size_t i = 0; i < 4; i++)
+	{
 		figCoord[i].x++;
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
 	}
 }
 
 void StopMoving()
 {
-	for (size_t i = 0; i < 4; i++)
-	{
-		screen[LIN_ADDR(figCoord[i].y, figCoord[i].x)] = '#';
-	}
-
+	int flag = 0;
 	int lines_to_remove = 0;
-	for (int curr_row = MAX_ROW - 1; curr_row <= 0; curr_row--)
+	unsigned char* video_buf = (unsigned char*) DEF_VRAM_BASE;
+
+	for (int curr_row = MAX_ROW - 1; curr_row >= 0; curr_row--)
 	{
 		for (int curr_col = 1; curr_col < MAX_COL - 2; curr_col++)
 		{
-			if (screen[LIN_ADDR(curr_row, curr_col)] != '#')
-				return;
+			if ((video_buf + MAX_COL * 2 * curr_row + 2 * curr_col) != '#') {
+				flag = 1;
+				break;
+			}
 		}
-		lines_to_remove++;
+
+		if (flag) {
+			if (lines_to_remove == 0) {
+				return;
+			}
+			else {
+				break;
+			}
+		}
+		else {
+			lines_to_remove++;
+		}
     }
 
-	for (int curr_row = MAX_ROW - 1; curr_row <= 0; curr_row--)
+	for (int curr_row = MAX_ROW - 1; curr_row > 0; curr_row--)
 	{
-		strncpy(screen + curr_row * MAX_COL,
-		 	screen + (curr_row - lines_to_remove) * MAX_COL,
-		  	MAX_COL);
+		strncpy(video_buf + curr_row * 2 * MAX_COL,
+		 	video_buf + (curr_row - lines_to_remove) * 2 * MAX_COL,
+		  	2 * MAX_COL);
 	}
-}
-
-void DrawScreen()
-{
-	char screen_copy[VRAM_SIZE];
-	strncpy(screen_copy, screen, VRAM_SIZE);
-
-	for (size_t i = 0; i < 4; i++)
-	{
-		screen_copy[LIN_ADDR(figCoord[i].y, figCoord[i].x)] = '#';
-	}	
-
-	printf(screen_copy);
 }
 
 void Exit()
@@ -149,19 +180,15 @@ void Exit()
 void PlayTetris()
 {
 	InitScreen();
-
 	CreateNewFigure();
-	DrawScreen();
 
 	while(1)
 	{
-		//Sleep(1);
-		//int res = MoveDown();
-		//if (res == -1) {
-		//	StopMoving();
-		//	CreateNewFigure();
-		//}
-		//DrawScreen();
-		asm("hlt");  
+		usleep(500000);
+		int res = MoveDown();
+		if (res == -1) {
+			StopMoving();
+			CreateNewFigure();
+		} 
 	}
 }
