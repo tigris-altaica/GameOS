@@ -1,6 +1,7 @@
 #ifndef _SCREEN_H
 #define _SCREEN_H
 
+#define SCREEN_WIDTH 30
 #define MAX_COL  80		// Maximum number of columns 
 #define MAX_ROW  25		// Maximum number of rows 
 #define VRAM_SIZE (MAX_COL*MAX_ROW)	// Size of screen, in short's 

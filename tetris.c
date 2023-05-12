@@ -4,8 +4,8 @@
 #include "tetris.h"
 
 struct Coordinates figCoord[4];
-
 int color;
+int play;
 
 int not_in_figure(unsigned int y, unsigned int x)
 {
@@ -19,86 +19,113 @@ int not_in_figure(unsigned int y, unsigned int x)
 	return 1;
 }
 
-void InitScreen()
+void SetupScreen()
 {
+	clear_screen();
+
 	color = 0x3;
 	
 	for (int curr_row = 0; curr_row < MAX_ROW; curr_row++)
 	{
 		out_chr('|', curr_row, 0, color);
-		for (int curr_col = 1; curr_col < MAX_COL - 1; curr_col++)
+		for (int curr_col = 1; curr_col < SCREEN_WIDTH - 1; curr_col++)
 		{
 			out_chr(' ', curr_row, curr_col, color);
 		}
-		out_chr('|', curr_row, MAX_COL - 1, color);
+		out_chr('|', curr_row, SCREEN_WIDTH - 1, color);
 	}
+}
+
+void Start()
+{
+	SetupScreen();
+	CreateNewFigure();
+
+	play = 1;
+}
+
+void GameOver()
+{
+	play = 0;
+
+	out_str("Game Over!", MAX_ROW / 2, MAX_COL / 2, 0x4);
 }
 
 void CreateNewFigure()
 {
 	color = rand() % 0xF + 1;
 
-	int figure = rand() % 5;
+	int figure = rand() % 7;
 
 	switch (figure) {
-	case 0:
+	case 0: // I
 		for (size_t i = 0; i < 4; i++)
 		{
 			figCoord[i].y = 0;
-			figCoord[i].x = MAX_COL / 2 - 1 + i;
+			figCoord[i].x = SCREEN_WIDTH / 2 - 1 + i;
 		}
         break;
-    case 1:
+    case 1: // O
         for (size_t i = 0; i < 4; i++)
 		{
 			figCoord[i].y = i % 2;
-			figCoord[i].x = (MAX_COL + i) / 2;
+			figCoord[i].x = (SCREEN_WIDTH + i) / 2;
 		}
         break;
-    case 2:
+    case 2: // T
         for (size_t i = 0; i < 4; i++)
 		{
 			figCoord[i].y = (i > 2);
-			figCoord[i].x = MAX_COL / 2 - 1 + i - 2 * (i > 2);
+			figCoord[i].x = SCREEN_WIDTH / 2 - 1 + i - 2 * (i > 2);
 		}
         break;
-    case 3:
+    case 3: // L
         for (size_t i = 0; i < 4; i++)
 		{
 			figCoord[i].y = i - (i > 2);
-			figCoord[i].x = MAX_COL / 2 + (i > 2);
+			figCoord[i].x = SCREEN_WIDTH / 2 + (i > 2);
 		}
         break;
-    case 4:
+    case 4: // J
+        for (size_t i = 0; i < 4; i++)
+		{
+			figCoord[i].y = i - (i > 0);
+			figCoord[i].x = SCREEN_WIDTH / 2 + (i == 1);
+		}
+        break;
+    case 5: // S
         for (size_t i = 0; i < 4; i++)
 		{
 			figCoord[i].y = i - (i > 1);
-			figCoord[i].x = MAX_COL / 2 + (i > 1);
+			figCoord[i].x = SCREEN_WIDTH / 2 + (i > 1);
+		}
+        break;
+    case 6: // Z
+        for (size_t i = 0; i < 4; i++)
+		{
+			figCoord[i].y = i - (i > 1);
+			figCoord[i].x = SCREEN_WIDTH / 2 - (i > 1);
 		}
         break;
     default:
     }
 
+    for (size_t i = 0; i < 4; i++)
+	{
+		if (*LIN_ADDR(figCoord[i].y, figCoord[i].x) == '#') {
+			GameOver();
+			return;
+		}
+	}
+
 	for (size_t i = 0; i < 4; i++)
 	{
 		out_chr('#', figCoord[i].y, figCoord[i].x, color);
 	}
-
 }
 
 int MoveDown()
 {
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
-	}
-
-	for (size_t i = 0; i < 4; i++)
-	{
-		figCoord[i].y++;
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
-	}
-
 	for (size_t i = 0; i < 4; i++)
 	{
 		if (*LIN_ADDR((figCoord[i].y + 1), figCoord[i].x) == '#'
@@ -111,13 +138,24 @@ int MoveDown()
 		}
 	}
 
+	for (size_t i = 0; i < 4; i++)
+	{
+		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	}
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		figCoord[i].y++;
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+	}
+
 	return 0;
 }
 
 void MoveDownToBottom()
 {
 	while (MoveDown() != -1);
-	StopMoving();
+	FixFigure();
 	CreateNewFigure();
 }
 
@@ -156,7 +194,7 @@ void MoveRight()
 			return -1;
 		}
 
-		if (figCoord[i].x >= MAX_COL - 2){
+		if (figCoord[i].x >= SCREEN_WIDTH - 2){
 			return;
 		}
 	}
@@ -173,14 +211,19 @@ void MoveRight()
 	}
 }
 
-void StopMoving()
+void RotateFigure()
+{
+	
+}
+
+void FixFigure()
 {
 	int flag = 0;
 	int lines_to_remove = 0;
 
 	for (int curr_row = MAX_ROW - 1; curr_row >= 0; curr_row--)
 	{
-		for (int curr_col = 1; curr_col < MAX_COL - 1; curr_col++)
+		for (int curr_col = 1; curr_col < SCREEN_WIDTH - 1; curr_col++)
 		{
 			if (*LIN_ADDR(curr_row, curr_col) != '#') {
 				flag = 1;
@@ -205,7 +248,7 @@ void StopMoving()
 	{
 		memcpy(LIN_ADDR(curr_row, 1),
 		 	LIN_ADDR((curr_row - lines_to_remove), 1),
-		  	2 * (MAX_COL - 2));
+		  	2 * (SCREEN_WIDTH - 2));
 	}
 }
 
@@ -216,17 +259,19 @@ void Exit()
 
 void PlayTetris()
 {
-	InitScreen();
-	CreateNewFigure();
+	Start();
 
 	while(1)
 	{
-		usleep(500000);
+		if (play)
+		{
+			usleep(500000);
 
-		int res = MoveDown();
-		if (res == -1) {
-			StopMoving();
-			CreateNewFigure();
-		} 
+			int ret = MoveDown();
+			if (ret == -1) {
+				FixFigure();
+				CreateNewFigure();
+			} 
+		}
 	}
 }

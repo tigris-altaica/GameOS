@@ -11,7 +11,7 @@
 
 // Базовый порт управления курсором текстового экрана. Подходит для большинства, но может отличаться в других BIOS и в общем случае адрес должен быть прочитан из BIOS data area.
 #define CURSOR_PORT (0x3D4)
-#define VIDEO_WIDTH (40) // Ширина текстового экрана
+#define VIDEO_WIDTH (80) // Ширина текстового экрана
 #define PIC1_PORT (0x20)
 
 void keyb_handler();
@@ -135,6 +135,16 @@ void out_chr(const unsigned char chr, unsigned int row, unsigned int col, int co
  
     video_buf[0] = chr;
     video_buf[1] = color;
+}
+
+void out_str(unsigned char* str, unsigned int row, unsigned int col, int color) 
+{  
+    while (*str)
+    {
+        out_chr(*str, row, col, color);
+        str++;
+        col++;
+    }
 } 
 
 unsigned char * memcpy (unsigned char *dst_, const unsigned char *src_, size_t n) 
@@ -148,7 +158,7 @@ unsigned char * memcpy (unsigned char *dst_, const unsigned char *src_, size_t n
 
 unsigned int rand()
 {
-    static unsigned int x0 = 1;
+    static unsigned int x0 = 1337;
     unsigned int a = 84589, c = 45989, m = 217728;
 
     unsigned int x = (a * x0 + c) % m;
@@ -160,19 +170,22 @@ unsigned int rand()
 void on_key(int scan_code)
 {
     switch (scan_code) {
-    case 75:
+    case 75: // LeftArrow
         MoveLeft();
         break;
-    case 77:
+    case 77: // RightArrow
         MoveRight();
         break;
-    case 80:
+    case 80: // DownArrow
         MoveDownToBottom();
         break;
-    case 57:
+    case 57: // Space
         //RotateFigure();
         break;
-    case 1:
+    case 19: // R
+        Start();
+        break;
+    case 1: // ESC
         Exit();
         break;
     default:
@@ -187,7 +200,8 @@ void main(void)
     intr_enable();
     keyb_init();
 
-    clear_screen();
+    cursor_moveto(MAX_ROW, MAX_COL);
+    
     PlayTetris();
 }
 
