@@ -180,7 +180,7 @@ void on_key(int scan_code)
         MoveDownToBottom();
         break;
     case 57: // Space
-        //RotateFigure();
+        RotateFigure();
         break;
     case 19: // R
         Start();

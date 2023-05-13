@@ -4,6 +4,7 @@
 #include "tetris.h"
 
 struct Coordinates figCoord[4];
+int figure;
 int color;
 int play;
 
@@ -55,7 +56,7 @@ void CreateNewFigure()
 {
 	color = rand() % 0xF + 1;
 
-	int figure = rand() % 7;
+	figure = rand() % 7;
 
 	switch (figure) {
 	case 0: // I
@@ -213,7 +214,37 @@ void MoveRight()
 
 void RotateFigure()
 {
-	
+	for (size_t i = 0; i < 4; i++)
+	{
+		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	}
+
+	struct Coordinates offset = figCoord[0];
+	for (size_t i = 0; i < 4; i++)
+	{
+		figCoord[i].x -= offset.x;
+		figCoord[i].y -= offset.y;
+
+		unsigned int figureWidth;
+		if (figure == 0){
+			figureWidth = 4;
+		}
+		else if (figure == 1){
+			figureWidth = 2;
+		}
+		else {
+			figureWidth = 3;
+		}
+
+		unsigned int temp = figCoord[i].x;
+		figCoord[i].x = figureWidth - figCoord[i].y - 1;
+		figCoord[i].y = temp;
+
+		figCoord[i].x += offset.x;
+		figCoord[i].y += offset.y;
+		
+		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+	}
 }
 
 void FixFigure()
