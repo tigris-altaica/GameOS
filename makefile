@@ -10,7 +10,6 @@ TEMP_DIR = tempdir
 
 OBJFILES = \
 	loader.o  \
-	common/printf.o  \
 	common/screen.o  \
 	common/sleep.o  \
 	kernel.o \

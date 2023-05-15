@@ -1,17 +1,11 @@
-#include "printf.h"
 #include "screen.h"
 #include "types.h"
 #include "io.h"
 #include "tetris.h"
 
 #define IDT_TYPE_INTR (0x0E)
-#define IDT_TYPE_TRAP (0x0F)
 // Селектор секции кода, установленный загрузчиком ОС
 #define GDT_CS (0x8)
-
-// Базовый порт управления курсором текстового экрана. Подходит для большинства, но может отличаться в других BIOS и в общем случае адрес должен быть прочитан из BIOS data area.
-#define CURSOR_PORT (0x3D4)
-#define VIDEO_WIDTH (80) // Ширина текстового экрана
 #define PIC1_PORT (0x20)
 
 void keyb_handler();
@@ -34,7 +28,6 @@ struct idt_ptr
     unsigned int base; 
 } __attribute__((packed)); // Выравнивание запрещено 
  
- 
 struct idt_entry g_idt[256]; // Реальная таблица IDT 
 struct idt_ptr g_idtp;       // Описатель таблицы для команды lidt
 typedef void (*intr_handler)();  
@@ -46,7 +39,6 @@ void default_intr_handler()
     asm("popa; leave; iret"); 
 } 
  
-
 void intr_reg_handler(int num, unsigned short segm_sel, unsigned short flags, intr_handler hndlr) 
 {  
     unsigned int hndlr_addr = (unsigned int) hndlr; 
@@ -111,41 +103,12 @@ void keyb_process_keys()
     if (data & 0x01)  
     {   
         unsigned char scan_code;   
-        unsigned char state; 
         in8(0x60, &data);
         scan_code = data;// Считывание символа с PS/2 клавиатуры 
         if (scan_code < 128)  
             on_key(scan_code);  
     } 
 }
-
-void cursor_moveto(unsigned int strnum, unsigned int pos) 
-{     
-    unsigned short new_pos = (strnum * VIDEO_WIDTH) + pos;     
-    out8(CURSOR_PORT, 0x0F);     
-    out8(CURSOR_PORT + 1, (unsigned char)(new_pos & 0xFF));  
-    out8(CURSOR_PORT, 0x0E);     
-    out8(CURSOR_PORT + 1, (unsigned char)( (new_pos >> 8) & 0xFF)); 
-} 
-
-void out_chr(const unsigned char chr, unsigned int row, unsigned int col, int color) 
-{  
-    unsigned char* video_buf = (unsigned char*) VIDEO_BUFFER;  
-    video_buf += MAX_COL * 2 * row + 2 * col; 
- 
-    video_buf[0] = chr;
-    video_buf[1] = color;
-}
-
-void out_str(unsigned char* str, unsigned int row, unsigned int col, int color) 
-{  
-    while (*str)
-    {
-        out_chr(*str, row, col, color);
-        str++;
-        col++;
-    }
-} 
 
 unsigned char * memcpy (unsigned char *dst_, const unsigned char *src_, size_t n) 
 {
@@ -177,9 +140,12 @@ void on_key(int scan_code)
         MoveRight();
         break;
     case 80: // DownArrow
-        MoveDownToBottom();
+        MoveDown();
         break;
     case 57: // Space
+        MoveDownToBottom();
+        break;
+    case 72: // Space
         RotateFigure();
         break;
     case 19: // R
@@ -193,7 +159,7 @@ void on_key(int scan_code)
 
 }
 
-void main(void)
+int main(void)
 {   
     intr_init();
     intr_start();

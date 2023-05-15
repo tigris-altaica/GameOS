@@ -1,23 +1,40 @@
 #include "types.h"
 #include "screen.h"
 #include "io.h"
+#include "sleep.h"
 #include "tetris.h"
 
-struct Coordinates figCoord[4];
+struct Coordinates figureCoord[4];
 int figure;
 int color;
 int play;
 
-int not_in_figure(unsigned int y, unsigned int x)
+int NotInFigure(unsigned int y, unsigned int x)
 {
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (figCoord[i].x == x && figCoord[i].y == y) {
+		if (figureCoord[i].x == x && figureCoord[i].y == y) {
 			return 0;
 		}
 	}
 
 	return 1;
+}
+
+void HideFigure()
+{
+	for (size_t i = 0; i < 4; i++)
+	{
+		out_chr(' ', figureCoord[i].y, figureCoord[i].x, color);
+	}
+}
+
+void ShowFigure()
+{
+	for (size_t i = 0; i < 4; i++)
+	{
+		out_chr('#', figureCoord[i].y, figureCoord[i].x, color);
+	}
 }
 
 void SetupScreen()
@@ -49,7 +66,7 @@ void GameOver()
 {
 	play = 0;
 
-	out_str("Game Over!", MAX_ROW / 2, MAX_COL / 2, 0x4);
+	out_str((unsigned char *)"Game Over!", MAX_ROW / 2, MAX_COL / 2, 0x4);
 }
 
 void CreateNewFigure()
@@ -62,50 +79,50 @@ void CreateNewFigure()
 	case 0: // I
 		for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = 0;
-			figCoord[i].x = SCREEN_WIDTH / 2 - 1 + i;
+			figureCoord[i].y = 0;
+			figureCoord[i].x = SCREEN_WIDTH / 2 - 1 + i;
 		}
         break;
     case 1: // O
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = i % 2;
-			figCoord[i].x = (SCREEN_WIDTH + i) / 2;
+			figureCoord[i].y = i % 2;
+			figureCoord[i].x = (SCREEN_WIDTH + i) / 2;
 		}
         break;
     case 2: // T
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = (i > 2);
-			figCoord[i].x = SCREEN_WIDTH / 2 - 1 + i - 2 * (i > 2);
+			figureCoord[i].y = (i > 2);
+			figureCoord[i].x = SCREEN_WIDTH / 2 - 1 + i - 2 * (i > 2);
 		}
         break;
     case 3: // L
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = i - (i > 2);
-			figCoord[i].x = SCREEN_WIDTH / 2 + (i > 2);
+			figureCoord[i].y = i - (i > 2);
+			figureCoord[i].x = SCREEN_WIDTH / 2 + (i > 2);
 		}
         break;
     case 4: // J
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = i - (i > 0);
-			figCoord[i].x = SCREEN_WIDTH / 2 + (i == 1);
+			figureCoord[i].y = i - (i > 0);
+			figureCoord[i].x = SCREEN_WIDTH / 2 + (i == 1);
 		}
         break;
     case 5: // S
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = i - (i > 1);
-			figCoord[i].x = SCREEN_WIDTH / 2 + (i > 1);
+			figureCoord[i].y = i - (i > 1);
+			figureCoord[i].x = SCREEN_WIDTH / 2 + (i > 1);
 		}
         break;
     case 6: // Z
         for (size_t i = 0; i < 4; i++)
 		{
-			figCoord[i].y = i - (i > 1);
-			figCoord[i].x = SCREEN_WIDTH / 2 - (i > 1);
+			figureCoord[i].y = i - (i > 1);
+			figureCoord[i].x = SCREEN_WIDTH / 2 - (i > 1);
 		}
         break;
     default:
@@ -113,42 +130,37 @@ void CreateNewFigure()
 
     for (size_t i = 0; i < 4; i++)
 	{
-		if (*LIN_ADDR(figCoord[i].y, figCoord[i].x) == '#') {
+		if (*LIN_ADDR(figureCoord[i].y, figureCoord[i].x) == '#') {
 			GameOver();
 			return;
 		}
 	}
 
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
-	}
+	ShowFigure();
 }
 
 int MoveDown()
 {
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (*LIN_ADDR((figCoord[i].y + 1), figCoord[i].x) == '#'
-			&& not_in_figure(figCoord[i].y + 1, figCoord[i].x)) {
+		if (*LIN_ADDR((figureCoord[i].y + 1), figureCoord[i].x) == '#'
+			&& NotInFigure(figureCoord[i].y + 1, figureCoord[i].x)) {
 			return -1;
 		}
 
-		if (figCoord[i].y >= MAX_ROW - 1) {
+		if (figureCoord[i].y >= MAX_ROW - 1) {
 			return -1;
 		}
 	}
 
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
-	}
+	HideFigure();
 
 	for (size_t i = 0; i < 4; i++)
 	{
-		figCoord[i].y++;
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+		figureCoord[i].y++;
 	}
+
+	ShowFigure();
 
 	return 0;
 }
@@ -164,87 +176,103 @@ void MoveLeft()
 {
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (*LIN_ADDR(figCoord[i].y, (figCoord[i].x - 1)) == '#'
-			&& not_in_figure(figCoord[i].y, figCoord[i].x - 1)) {
-			return -1;
+		if (*LIN_ADDR(figureCoord[i].y, (figureCoord[i].x - 1)) == '#'
+			&& NotInFigure(figureCoord[i].y, figureCoord[i].x - 1)) {
+			return;
 		}
 
-		if (figCoord[i].x <= 1){
+		if (figureCoord[i].x <= 1){
 			return;
 		}
 	}
 
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
-	}
+	HideFigure();
 
 	for (size_t i = 0; i < 4; i++)
 	{
-		figCoord[i].x--;
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+		figureCoord[i].x--;
 	}
+
+	ShowFigure();
 }
 
 void MoveRight()
 {
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (*LIN_ADDR(figCoord[i].y, (figCoord[i].x + 1)) == '#'
-			&& not_in_figure(figCoord[i].y, figCoord[i].x + 1)) {
-			return -1;
+		if (*LIN_ADDR(figureCoord[i].y, (figureCoord[i].x + 1)) == '#'
+			&& NotInFigure(figureCoord[i].y, figureCoord[i].x + 1)) {
+			return;
 		}
 
-		if (figCoord[i].x >= SCREEN_WIDTH - 2){
+		if (figureCoord[i].x >= SCREEN_WIDTH - 2){
 			return;
 		}
 	}
 
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
-	}
+	HideFigure();
 
 	for (size_t i = 0; i < 4; i++)
 	{
-		figCoord[i].x++;
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+		figureCoord[i].x++;
 	}
+
+	ShowFigure();
 }
 
 void RotateFigure()
 {
-	for (size_t i = 0; i < 4; i++)
-	{
-		out_chr(' ', figCoord[i].y, figCoord[i].x, color);
+	struct Coordinates rotatedCoord[4];
+	struct Coordinates offset = figureCoord[0];
+
+	unsigned int figureWidth;
+	if (figure == 0){
+		figureWidth = 4;
+	}
+	else if (figure == 1){
+		figureWidth = 2;
+	}
+	else {
+		figureWidth = 3;
 	}
 
-	struct Coordinates offset = figCoord[0];
 	for (size_t i = 0; i < 4; i++)
 	{
-		figCoord[i].x -= offset.x;
-		figCoord[i].y -= offset.y;
+		rotatedCoord[i] = figureCoord[i];
 
-		unsigned int figureWidth;
-		if (figure == 0){
-			figureWidth = 4;
-		}
-		else if (figure == 1){
-			figureWidth = 2;
-		}
-		else {
-			figureWidth = 3;
+		rotatedCoord[i].x -= offset.x;
+		rotatedCoord[i].y -= offset.y;
+
+		unsigned int temp = rotatedCoord[i].x;
+		rotatedCoord[i].x = figureWidth - rotatedCoord[i].y - 1;
+		rotatedCoord[i].y = temp;
+
+		rotatedCoord[i].x += offset.x;
+		rotatedCoord[i].y += offset.y;
+
+
+		if (*LIN_ADDR(rotatedCoord[i].y, rotatedCoord[i].x) == '#'
+			&& NotInFigure(rotatedCoord[i].y, rotatedCoord[i].x)) {
+			return;
 		}
 
-		unsigned int temp = figCoord[i].x;
-		figCoord[i].x = figureWidth - figCoord[i].y - 1;
-		figCoord[i].y = temp;
+		if (rotatedCoord[i].y >= MAX_ROW - 1) {
+			return;
+		}
 
-		figCoord[i].x += offset.x;
-		figCoord[i].y += offset.y;
-		
-		out_chr('#', figCoord[i].y, figCoord[i].x, color);
+		if (rotatedCoord[i].x >= SCREEN_WIDTH - 2){
+			return;
+		}
 	}
+
+	HideFigure();
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		figureCoord[i] = rotatedCoord[i];
+	}
+
+	ShowFigure();
 }
 
 void FixFigure()
