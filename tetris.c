@@ -260,6 +260,10 @@ void RotateFigure()
 			return;
 		}
 
+		if (figureCoord[i].x <= 1){
+			return;
+		}
+
 		if (rotatedCoord[i].x >= SCREEN_WIDTH - 2){
 			return;
 		}

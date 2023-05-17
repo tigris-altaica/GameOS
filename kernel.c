@@ -85,6 +85,7 @@ void keyb_init()
     out8(PIC1_PORT + 1, 0xFF ^ 0x02); // 0xFF - все прерывания, 0x02 - бит IRQ1 (клавиатура).  
     // Разрешены будут только прерывания, чьи биты установлены в 0 
 } 
+
 void keyb_handler() 
 {  
     asm("pusha"); 
@@ -121,7 +122,7 @@ unsigned char * memcpy (unsigned char *dst_, const unsigned char *src_, size_t n
 
 unsigned int rand()
 {
-    static unsigned int x0 = 1337;
+    static unsigned int x0 = 100;
     unsigned int a = 84589, c = 45989, m = 217728;
 
     unsigned int x = (a * x0 + c) % m;
@@ -145,7 +146,7 @@ void on_key(int scan_code)
     case 57: // Space
         MoveDownToBottom();
         break;
-    case 72: // Space
+    case 72: // UpArrow
         RotateFigure();
         break;
     case 19: // R
