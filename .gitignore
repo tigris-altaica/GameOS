@@ -1,4 +1,6 @@
+.idea
 *.o
+common/*.o
 hdd.img
 kernel.bin
 kernel.bin.dbg
